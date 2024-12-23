@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     FILENAME_LINKS: str
 
     SEMAPHORE: int
+    SEMAPHORE_VIDEO: int
 
     @property
     def today(self):

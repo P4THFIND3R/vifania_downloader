@@ -9,7 +9,7 @@ from pyrogram.enums import MessageMediaType
 
 from src.utils.logger import logger
 from src.core.config import settings
-from src.services.repository import FileRepository
+from src.repositories.repository import FileRepository
 
 
 class PyrogramClient:
@@ -18,6 +18,7 @@ class PyrogramClient:
         self.repository = repository
 
         self.semaphore = asyncio.Semaphore(settings.SEMAPHORE)
+        self.semaphore_video = asyncio.Semaphore(settings.SEMAPHORE_VIDEO)
 
         self.start = time()
         self.map: dict[MessageMediaType: int] = {}
@@ -58,6 +59,7 @@ class PyrogramClient:
                         tasks_video.append(
                             self.semaphore_wrapper(
                                 self._download_with_notification,
+                                self.semaphore_video,
                                 message,
                                 filepath
                             )
@@ -73,6 +75,7 @@ class PyrogramClient:
                         tasks.append(
                             self.semaphore_wrapper(
                                 self._download_with_notification,
+                                self.semaphore,
                                 message,
                                 filepath
                             )
@@ -87,6 +90,7 @@ class PyrogramClient:
                         tasks.append(
                             self.semaphore_wrapper(
                                 self._download_with_notification,
+                                self.semaphore,
                                 message,
                                 filepath
                             )
@@ -153,8 +157,10 @@ class PyrogramClient:
             except Exception as e:
                 logger.error(f"Ошибка при скачивании файла {filepath}: {e}")
 
-    async def semaphore_wrapper(self, coro, *args, **kwargs):
-        async with self.semaphore:
+    async def semaphore_wrapper(self, coro, semaphore: asyncio.Semaphore | None, *args, **kwargs):
+        if not semaphore:
+            semaphore = self.semaphore
+        async with semaphore:
             return await coro(*args, **kwargs)
 
     def _logging_result(self):
