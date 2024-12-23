@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     API_HASH: str
     SESSION_NAME: str = "my_account"
 
-    TARGET_VIFANIA: int = -1001989999005
+    TARGET: int = -1001989999005
     DAYS: int = 6
     LIMIT: int = 500
 
