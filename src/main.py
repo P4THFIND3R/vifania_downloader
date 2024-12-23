@@ -2,7 +2,7 @@ from pyrogram import Client
 
 from src.core.config import settings
 from src.services.telegram import PyrogramClient
-from src.services.repository import FileRepository
+from src.repositories.repository import FileRepository
 
 
 def main():
