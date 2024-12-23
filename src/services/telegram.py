@@ -17,9 +17,10 @@ class PyrogramClient:
         self.app = client
         self.repository = repository
 
-        self.semaphore = asyncio.Semaphore(5)
+        self.semaphore = asyncio.Semaphore(settings.SEMAPHORE)
 
-        self.map = {}
+        self.start = time()
+        self.map: dict[MessageMediaType: int] = {}
 
     def run(self):
         try:
@@ -33,7 +34,6 @@ class PyrogramClient:
 
         async with self.app:
             app = self.app
-            start = time()
 
             messages = app.get_chat_history(
                 chat_id=settings.TARGET,
@@ -41,6 +41,8 @@ class PyrogramClient:
             )
 
             tasks = []
+            tasks_video = []
+
             async for message in messages:
                 if message.date < (datetime.today() - timedelta(days=settings.DAYS)):
                     break
@@ -53,10 +55,13 @@ class PyrogramClient:
                             message.video.file_name
                         )
 
-                        task = asyncio.create_task(
-                            self.semaphore_wrapper(self._download_with_notification, message, filepath)
+                        tasks_video.append(
+                            self.semaphore_wrapper(
+                                self._download_with_notification,
+                                message,
+                                filepath
+                            )
                         )
-                        tasks.append(task)
 
                     case MessageMediaType.DOCUMENT:
                         filepath = await self.process_message(
@@ -65,10 +70,13 @@ class PyrogramClient:
                             message.document.file_name
                         )
 
-                        task = asyncio.create_task(
-                            self.semaphore_wrapper(self._download_with_notification, message, filepath)
+                        tasks.append(
+                            self.semaphore_wrapper(
+                                self._download_with_notification,
+                                message,
+                                filepath
+                            )
                         )
-                        tasks.append(task)
 
                     case MessageMediaType.PHOTO:
                         filepath = await self.process_message(
@@ -76,10 +84,13 @@ class PyrogramClient:
                             message.date
                         )
 
-                        task = asyncio.create_task(
-                            self.semaphore_wrapper(self._download_with_notification, message, filepath)
+                        tasks.append(
+                            self.semaphore_wrapper(
+                                self._download_with_notification,
+                                message,
+                                filepath
+                            )
                         )
-                        tasks.append(task)
 
                     case MessageMediaType.WEB_PAGE:
                         self.repository.add_link(message.web_page.url)
@@ -95,14 +106,14 @@ class PyrogramClient:
                                 self.repository.add_link(message.text)
 
             await asyncio.gather(*tasks)
+            await asyncio.gather(*tasks_video)
 
             logger.info("Сохраняем ссылки в файл...")
             self.repository.save_links()
             logger.info("Очищаем временные файлы...")
             self.repository.clear_temps()
 
-            logger.info(f"{self.map}")
-            logger.info(f"Загрузка медиаконтента завершена за {time() - start:.2f} секунд.")
+            self._logging_result()
 
     async def process_message(self, message: MessageMediaType, date: datetime, filename: str | None = None) -> str:
         """ Обработка сообщения, возвращает путь для скачивания. """
@@ -120,10 +131,6 @@ class PyrogramClient:
 
         return self.repository.get_filepath(filename)
 
-    async def semaphore_wrapper(self, coro, *args, **kwargs):
-        async with self.semaphore:
-            return await coro(*args, **kwargs)
-
     @staticmethod
     async def _download_with_notification(message: Message, filepath: str):
         """ Скачивание файла с уведомлением. """
@@ -137,11 +144,23 @@ class PyrogramClient:
                 break
             except PermissionError as e:
                 if attempt < 2:
-                    logger.warning(f"Ошибка доступа к файлу {filepath}, повтор через 1 секунду... ({e})")
+                    logger.warning(f"Ошибка доступа к файлу {filepath}, повтор через 1 секунду...")
                     filepath = f"{filepath}.{uuid.uuid4().hex}.temp"
 
                     await asyncio.sleep(1)
                 else:
                     logger.error(f"Скачивание файла {filepath} завершилось ошибкой: {e}")
+            except Exception as e:
+                logger.error(f"Ошибка при скачивании файла {filepath}: {e}")
 
-                    raise
+    async def semaphore_wrapper(self, coro, *args, **kwargs):
+        async with self.semaphore:
+            return await coro(*args, **kwargs)
+
+    def _logging_result(self):
+        logger.info(f"\nВсего было скачано: {sum(self.map.values())} файлов.")
+
+        for k, v in self.map.items():
+            logger.info(f'\t - {k.value}: {v}')
+
+        logger.info(f"Загрузка медиаконтента завершена за {time() - self.start:.2f} секунд.\n")
