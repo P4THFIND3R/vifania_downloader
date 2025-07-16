@@ -116,9 +116,7 @@ class PyrogramClient:
             await asyncio.gather(*tasks)
             await asyncio.gather(*tasks_video)
 
-            logger.info("Сохраняем ссылки в файл...")
             self.repository.save_links()
-            logger.info("Очищаем временные файлы...")
             self.repository.clear_temps()
 
             self._logging_result()

@@ -52,6 +52,8 @@ class FileRepository:
 
     def save_links(self):
         if self.links:
+            logger.info("Сохраняем ссылки в файл...")
+
             with open(self.links_filename, 'w') as file:
                 for link in self.links:
                     file.write(f"{link}\n")
@@ -60,6 +62,8 @@ class FileRepository:
             os.startfile(self.links_filename)
 
     def clear_temps(self):
+        logger.info("Очищаем временные файлы...")
+
         for file in self.path.glob('*'):
             if file.is_file() and file.suffix == '.temp':
                 file.unlink(missing_ok=True)
