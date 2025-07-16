@@ -109,6 +109,10 @@ class PyrogramClient:
 
                                 self.repository.add_link(message.text)
 
+            logger.info(f"\n---------------------------------------------------------------"
+                        f"\nНа скачивание подготовлено {sum(self.map.values())} файла(ов)\n"
+                        f"---------------------------------------------------------------\n")
+
             await asyncio.gather(*tasks)
             await asyncio.gather(*tasks_video)
 
