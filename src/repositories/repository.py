@@ -28,9 +28,17 @@ class FileRepository:
             logger.error(f"Каталог '{self.path}' не найден.")
 
     def get_filepath(self, path: str | None) -> str:
+        path = self.clear_windows_symbols(path) if path else path
+
         if path:
             return self.path.joinpath(path).__str__()
         return self.path.__str__()
+
+    @staticmethod
+    def clear_windows_symbols(filepath: str) -> str:
+        forbidden = set('/*:|"<>\n')
+        path = ''.join(s for s in filepath if s not in forbidden)
+        return path
 
     def add_link(self, link: str):
         if link:

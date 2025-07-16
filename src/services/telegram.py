@@ -151,7 +151,7 @@ class PyrogramClient:
                     logger.warning(f"Ошибка доступа к файлу {filepath}, повтор через 1 секунду...")
                     filepath = f"{filepath}.{uuid.uuid4().hex}.temp"
 
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(2)
                 else:
                     logger.error(f"Скачивание файла {filepath} завершилось ошибкой: {e}")
             except Exception as e:
