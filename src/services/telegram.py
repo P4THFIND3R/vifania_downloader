@@ -148,14 +148,18 @@ class PyrogramClient:
                 break
             except PermissionError as e:
                 if attempt < 2:
-                    logger.warning(f"Ошибка доступа к файлу {filepath}, повтор через 1 секунду...")
+                    # logger.warning(f"Ошибка доступа к файлу {filepath}, повтор через 1 секунду...")
                     filepath = f"{filepath}.{uuid.uuid4().hex}.temp"
 
                     await asyncio.sleep(2)
                 else:
                     logger.error(f"Скачивание файла {filepath} завершилось ошибкой: {e}")
+
             except Exception as e:
-                logger.error(f"Ошибка при скачивании файла {filepath}: {e}")
+                if filepath.endswith('.temp'):
+                    pass
+                else:
+                    logger.error(f"Ошибка при скачивании файла {filepath}: {e}")
 
     async def semaphore_wrapper(self, coro, semaphore: asyncio.Semaphore | None, *args, **kwargs):
         if not semaphore:

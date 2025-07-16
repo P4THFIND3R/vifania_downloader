@@ -1,4 +1,5 @@
 import os
+import uuid
 import webbrowser
 from pathlib import Path
 
@@ -32,7 +33,7 @@ class FileRepository:
 
         if path:
             return self.path.joinpath(path).__str__()
-        return self.path.__str__()
+        return self.path.joinpath(uuid.uuid4().__str__()[:5] + '.png').__str__()
 
     @staticmethod
     def clear_windows_symbols(filepath: str) -> str:
